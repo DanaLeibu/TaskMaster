@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PlusCircle, CheckCircle2, Circle, Trash2, ClipboardList } from 'lucide-react';
 
 interface Todo {
@@ -11,29 +11,48 @@ function App() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [newTodo, setNewTodo] = useState('');
 
-  const addTodo = (e: React.FormEvent) => {
+  const fetchTodos = async () => {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/todos`);
+    const data = await res.json();
+    setTodos(data);
+  };
+
+  useEffect(() => {
+    fetchTodos();
+  }, []);
+
+  const addTodo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newTodo.trim()) {
-      setTodos([...todos, { id: Date.now(), text: newTodo.trim(), completed: false }]);
+      const res = await fetch('http://localhost:3001/api/todos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: newTodo.trim() }),
+      });
+      const added = await res.json();
+      setTodos([...todos, added]);
       setNewTodo('');
     }
   };
 
-  const toggleTodo = (id: number) => {
-    setTodos(todos.map(todo =>
-      todo.id === id ? { ...todo, completed: !todo.completed } : todo
-    ));
+  const toggleTodo = async (id: number) => {
+    await fetch(`http://localhost:3001/api/todos/${id}`, {
+      method: 'PATCH',
+    });
+    fetchTodos();
   };
 
-  const deleteTodo = (id: number) => {
-    setTodos(todos.filter(todo => todo.id !== id));
+  const deleteTodo = async (id: number) => {
+    await fetch(`http://localhost:3001/api/todos/${id}`, {
+      method: 'DELETE',
+    });
+    fetchTodos();
   };
 
   const completedCount = todos.filter(todo => todo.completed).length;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      {/* Header */}
       <div className="bg-headerBg py-16">
         <div className="max-w-3xl mx-auto px-4">
           <h1 className="text-4xl font-bold text-white text-center flex items-center justify-center gap-2">
@@ -43,7 +62,6 @@ function App() {
         </div>
       </div>
 
-      {/* Todo Form */}
       <div className="max-w-3xl mx-auto px-4 -mt-8">
         <form onSubmit={addTodo} className="flex gap-2">
           <input
@@ -63,9 +81,7 @@ function App() {
         </form>
       </div>
 
-      {/* Todo List */}
       <div className="max-w-3xl mx-auto px-4 py-8">
-        {/* Stats */}
         <div className="flex justify-between text-sm mb-6">
           <span className="text-gray-600">
             Total tasks: <span className="font-bold text-blue-600">{todos.length}</span>
@@ -75,7 +91,6 @@ function App() {
           </span>
         </div>
 
-        {/* List */}
         <div className="space-y-2">
           {todos.length === 0 ? (
             <div className="text-center py-12">
@@ -113,7 +128,6 @@ function App() {
         </div>
       </div>
 
-      {/* Footer */}
       <div className="max-w-3xl mx-auto px-4 py-8 text-center text-gray-500">
         <p>Stay organized with Task Master</p>
       </div>
